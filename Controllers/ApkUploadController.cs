@@ -9,11 +9,13 @@ namespace APKAnalyzerApp.Controllers
     {
         private readonly IApkAnalyzerService _apkAnalyzerService;
         private readonly IWebHostEnvironment _environment;
+        private readonly IConfiguration _configuration;
 
-        public ApkUploadController(IApkAnalyzerService apkAnalyzerService, IWebHostEnvironment environment)
+        public ApkUploadController(IApkAnalyzerService apkAnalyzerService, IWebHostEnvironment environment, IConfiguration configuration)
         {
             _apkAnalyzerService = apkAnalyzerService;
             _environment = environment;
+            _configuration = configuration;
         }
 
         [HttpPost("upload")]
@@ -22,6 +24,14 @@ namespace APKAnalyzerApp.Controllers
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No APK file uploaded.");
+            }
+
+            var maxFileSizeInMb = _configuration["AppSettings:MaxApkFileSizeInMb"] ?? "100";
+            var maxFileSizeBytes = long.Parse(maxFileSizeInMb) * 1024 * 1024;
+
+            if (file.Length > maxFileSizeBytes)
+            {
+                return BadRequest($"APK file size exceeds the allowed limit of {maxFileSizeInMb} MB.");
             }
 
             if (!file.FileName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
